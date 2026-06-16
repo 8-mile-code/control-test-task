@@ -1,6 +1,8 @@
-def main():
-    print("Hello from control-test-task!")
+from fastapi import FastAPI
 
+from app.api.routers import health
+from app.core.config import settings
 
-if __name__ == "__main__":
-    main()
+app = FastAPI(title=settings.APP_NAME, debug=settings.DEBUG)
+
+app.include_router(health.router)

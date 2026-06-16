@@ -1,4 +1,3 @@
-```gitignore
 # Python
 __pycache__/
 *.py[cod]
@@ -57,7 +56,6 @@ Thumbs.db
 tmp/
 temp/
 .cache/
-```
 
 # Other
 notes.md
