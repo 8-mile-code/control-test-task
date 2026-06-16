@@ -1,0 +1,43 @@
+.PHONY: help install dev test lint format check migrate revision docker-up docker-down
+
+help:
+	@echo "Available commands:"
+	@echo "  make install      Install dependencies"
+	@echo "  make dev          Run API locally"
+	@echo "  make test         Run tests"
+	@echo "  make lint         Run ruff linter"
+	@echo "  make format       Format code"
+	@echo "  make check        Run lint and tests"
+	@echo "  make migrate      Apply database migrations"
+	@echo "  make revision     Create Alembic migration"
+	@echo "  make docker-up    Start full stack with Docker"
+	@echo "  make docker-down  Stop Docker stack"
+
+install:
+	uv sync --dev
+
+dev:
+	uv run uvicorn app.main:app --reload
+
+test:
+	uv run pytest
+
+lint:
+	uv run ruff check .
+
+format:
+	uv run ruff format .
+
+check: lint test
+
+migrate:
+	uv run alembic upgrade head
+
+revision:
+	uv run alembic revision --autogenerate -m "update schema"
+
+docker-up:
+	docker compose up --build
+
+docker-down:
+	docker compose down

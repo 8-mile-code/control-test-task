@@ -1,0 +1,63 @@
+```gitignore
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Pytest
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Ruff / linters
+.ruff_cache/
+
+# Mypy / type checkers
+.mypy_cache/
+.pyre/
+.pytype/
+
+# IDE / editors
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Logs
+*.log
+logs/
+
+# Database files
+*.sqlite
+*.sqlite3
+*.db
+
+
+# Docker
+docker-compose.override.yml
+
+# OS
+Thumbs.db
+
+# Temporary files
+tmp/
+temp/
+.cache/
+```
+
+# Other
+notes.md
