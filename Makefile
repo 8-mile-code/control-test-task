@@ -1,4 +1,4 @@
-.PHONY: help install dev test lint format check migrate revision docker-up docker-down
+.PHONY: help install dev test lint format fix check migrate revision docker-up docker-down
 
 help:
 	@echo "Available commands:"
@@ -7,6 +7,7 @@ help:
 	@echo "  make test         Run tests"
 	@echo "  make lint         Run ruff linter"
 	@echo "  make format       Format code"
+	@echo "  make fix          Auto-fix lint issues and format code"
 	@echo "  make check        Run lint and tests"
 	@echo "  make migrate      Apply database migrations"
 	@echo "  make revision     Create Alembic migration"
@@ -26,6 +27,10 @@ lint:
 	uv run ruff check .
 
 format:
+	uv run ruff format .
+
+fix:
+	uv run ruff check --fix .
 	uv run ruff format .
 
 check: lint test
