@@ -90,10 +90,3 @@ class BookingRepository:
         db.refresh(booking)
 
         return booking
-
-    def cancel(
-        self,
-        db: Session,
-        booking: Booking,
-    ) -> Booking:
-        return self.update_status(db, booking, BookingStatus.CANCELLED)
