@@ -21,7 +21,7 @@ def send_mock_notification(booking: Booking) -> None:
         "Mock notification sent",
         extra={
             "booking_id": booking.id,
-            "сustomer_name": booking.name,
+            "customer_name": booking.name,
             "service_type": booking.service_type,
         },
     )

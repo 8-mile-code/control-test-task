@@ -1,4 +1,4 @@
-.PHONY: help install dev test lint format fix check migrate revision docker-up docker-down
+.PHONY: help install dev test lint format fix check migrate revision docker-up docker-down worker
 
 help:
 	@echo "Available commands:"
