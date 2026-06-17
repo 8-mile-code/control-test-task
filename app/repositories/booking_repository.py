@@ -15,12 +15,13 @@ class BookingRepository:
         name: str,
         booking_datetime: dt,
         service_type: str,
+        status: BookingStatus,
     ) -> Booking:
         booking = Booking(
             name=name,
             datetime=booking_datetime,
             service_type=service_type,
-            status=BookingStatus.PENDING.value,
+            status=status.value,
         )
 
         db.add(booking)
