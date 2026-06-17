@@ -11,6 +11,7 @@ from app.services.exceptions import (
     BookingCannotBeCancelledError,
     BookingNotFoundError,
 )
+from app.workers.tasks import process_booking_task
 
 router = APIRouter(prefix="/bookings", tags=["Bookings"])
 
@@ -42,6 +43,7 @@ def create_booking(
     service: BookingServiceDep,
 ) -> BookingRead:
     booking = service.create_booking(db, booking_data)
+    process_booking_task.delay(booking.id)
 
     return booking
 

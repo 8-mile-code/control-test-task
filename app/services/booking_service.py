@@ -101,7 +101,7 @@ class BookingService:
         self,
         db: Session,
         booking_id: int,
-    ) -> Booking:
+    ) -> tuple[Booking, bool]:
         try:
             booking = self.repository.get_by_id_for_update(db, booking_id)
 
@@ -110,7 +110,7 @@ class BookingService:
 
             if booking.status != BookingStatus.PENDING.value:
                 db.rollback()
-                return booking
+                return booking, False
 
             booking = self.repository.update_status(
                 db,
@@ -127,13 +127,13 @@ class BookingService:
             db.rollback()
             raise
 
-        return booking
+        return booking, True
 
     def fail_booking(
         self,
         db: Session,
         booking_id: int,
-    ) -> Booking:
+    ) -> tuple[Booking, bool]:
         try:
             booking = self.repository.get_by_id_for_update(db, booking_id)
 
@@ -142,7 +142,7 @@ class BookingService:
 
             if booking.status != BookingStatus.PENDING.value:
                 db.rollback()
-                return booking
+                return booking, False
 
             booking = self.repository.update_status(
                 db,
@@ -159,4 +159,4 @@ class BookingService:
             db.rollback()
             raise
 
-        return booking
+        return booking, True

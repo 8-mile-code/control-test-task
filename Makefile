@@ -13,6 +13,7 @@ help:
 	@echo "  make revision     Create Alembic migration"
 	@echo "  make docker-up    Start full stack with Docker"
 	@echo "  make docker-down  Stop Docker stack"
+	@echo "  make worker       Run Celery worker"
 
 install:
 	uv sync --dev
@@ -46,3 +47,6 @@ docker-up:
 
 docker-down:
 	docker compose down
+
+worker:
+	uv run celery -A app.workers.celery_app.celery_app worker --loglevel=info
