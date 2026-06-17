@@ -36,3 +36,27 @@ uv sync --dev
 ```bash
 make dev
 ```
+
+## Retry и backoff
+
+Celery worker имитирует вызов внешнего сервиса при обработке брони.
+
+Вероятность сбоя настраивается переменной:
+
+```env
+BOOKING_FAILURE_RATE=0.15
+BOOKING_MAX_RETRIES=3
+BOOKING_RETRY_BACKOFF_SECONDS=5
+```
+Если внешний сервис временно недоступен, задача повторяется с экспоненциальным backoff.
+
+Задержка считается по формуле:
+
+```bash
+BOOKING_RETRY_BACKOFF_SECONDS * 2^retry_number
+```
+
+Например, при `BOOKING_RETRY_BACKOFF_SECONDS=5` повторы будут примерно через 5, 10, 20 секунд.
+Если все попытки исчерпаны, бронь переводится в статус failed.
+
+Повторный запуск задачи идемпотентен: worker меняет только брони в статусе pending. Брони в статусах confirmed, failed и cancelled повторно не обрабатываются.

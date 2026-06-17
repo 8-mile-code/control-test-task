@@ -1,3 +1,4 @@
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -15,7 +16,9 @@ class Settings(BaseSettings):
     CELERY_BROKER_URL: str
     CELERY_RESULT_BACKEND: str
 
-    BOOKING_FAILURE_RATE: float = 0.15
+    BOOKING_FAILURE_RATE: float = Field(default=0.15, ge=0, le=1)
+    BOOKING_MAX_RETRIES: int = Field(default=3, ge=0)
+    BOOKING_RETRY_BACKOFF_SECONDS: int = Field(default=5, ge=1)
 
     @property
     def DATABASE_URL(self) -> str:
