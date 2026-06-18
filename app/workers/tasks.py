@@ -25,6 +25,7 @@ def send_mock_notification(booking: Booking) -> None:
     logger.info(
         "Mock notification sent",
         extra={
+            "event": "mock_notification_sent",
             "booking_id": booking.id,
             "customer_name": booking.name,
             "service_type": booking.service_type,
@@ -39,6 +40,14 @@ def send_mock_notification(booking: Booking) -> None:
 )
 def process_booking_task(self, booking_id: int) -> None:
     service = BookingService()
+    logger.info(
+        "Booking task started.",
+        extra={
+            "event": "booking_task_started",
+            "booking_id": booking_id,
+            "retry": self.request.retries,
+        },
+    )
 
     with SessionLocal() as db:
         try:
@@ -46,7 +55,11 @@ def process_booking_task(self, booking_id: int) -> None:
         except BookingNotFoundError:
             logger.info(
                 "Booking not found. Task skipped.",
-                extra={"booking_id": booking_id},
+                extra={
+                    "event": "booking_task_skipped",
+                    "booking_id": booking_id,
+                    "reason": "booking_not_found",
+                },
             )
             return
 
@@ -54,8 +67,10 @@ def process_booking_task(self, booking_id: int) -> None:
             logger.info(
                 "Booking already processed. Task skipped.",
                 extra={
+                    "event": "booking_task_skipped",
                     "booking_id": booking.id,
                     "status": booking.status,
+                    "reason": "booking_already_processed",
                 },
             )
             return
@@ -67,7 +82,10 @@ def process_booking_task(self, booking_id: int) -> None:
                 if changed:
                     logger.info(
                         "Booking processing failed after retries exhausted.",
-                        extra={"booking_id": booking.id},
+                        extra={
+                            "event": "booking_failed",
+                            "booking_id": booking.id,
+                        },
                     )
 
                 return
@@ -77,6 +95,7 @@ def process_booking_task(self, booking_id: int) -> None:
             logger.warning(
                 "External service failed. Retrying booking task.",
                 extra={
+                    "event": "booking_task_retry",
                     "booking_id": booking_id,
                     "next_retry": self.request.retries + 1,
                     "max_retries": settings.BOOKING_MAX_RETRIES,
@@ -94,6 +113,6 @@ def process_booking_task(self, booking_id: int) -> None:
         if changed:
             logger.info(
                 "Booking confirmed.",
-                extra={"booking_id": booking.id},
+                extra={"event": "booking_confirmed", "booking_id": booking.id},
             )
             send_mock_notification(booking)

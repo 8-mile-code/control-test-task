@@ -1,6 +1,9 @@
 from celery import Celery
 
 from app.core.config import settings
+from app.core.logging import configure_logging
+
+configure_logging(debug=settings.DEBUG)
 
 celery_app = Celery(
     "booking_service",

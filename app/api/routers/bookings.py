@@ -1,3 +1,4 @@
+import logging
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -12,6 +13,8 @@ from app.services.exceptions import (
     BookingNotFoundError,
 )
 from app.workers.tasks import process_booking_task
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/bookings", tags=["Bookings"])
 
@@ -43,7 +46,23 @@ def create_booking(
     service: BookingServiceDep,
 ) -> BookingRead:
     booking = service.create_booking(db, booking_data)
-    process_booking_task.delay(booking.id)
+    logger.info(
+        "Booking created.",
+        extra={
+            "event": "booking_created",
+            "booking_id": booking.id,
+            "status": booking.status,
+        },
+    )
+    task = process_booking_task.delay(booking.id)
+    logger.info(
+        "Booking task queued.",
+        extra={
+            "event": "booking_task_queued",
+            "booking_id": booking.id,
+            "task_id": task.id,
+        },
+    )
 
     return booking
 
