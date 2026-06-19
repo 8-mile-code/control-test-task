@@ -81,3 +81,47 @@ def test_create_booking_rejects_blank_strings(
 
     assert response.status_code == 422
     celery_delay_mock.assert_not_called()
+
+
+def test_get_booking_by_id_success(
+    client: TestClient,
+    celery_delay_mock: Mock,
+) -> None:
+    payload = get_valid_booking_payload()
+
+    create_response = client.post("/bookings", json=payload)
+
+    assert create_response.status_code == 201
+
+    created_booking = create_response.json()
+    booking_id = created_booking["id"]
+
+    celery_delay_mock.reset_mock()
+
+    response = client.get(f"/bookings/{booking_id}")
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert data["id"] == booking_id
+    assert data["name"] == created_booking["name"]
+    assert data["datetime"] == created_booking["datetime"]
+    assert data["service_type"] == created_booking["service_type"]
+    assert data["status"] == created_booking["status"]
+    assert data["created_at"] == created_booking["created_at"]
+    assert data["updated_at"] == created_booking["updated_at"]
+
+    celery_delay_mock.assert_not_called()
+
+
+def test_get_booking_by_id_not_found(
+    client: TestClient,
+    celery_delay_mock: Mock,
+) -> None:
+    response = client.get("/bookings/999")
+
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Booking not found."}
+
+    celery_delay_mock.assert_not_called()
