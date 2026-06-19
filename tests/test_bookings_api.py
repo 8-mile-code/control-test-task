@@ -3,14 +3,33 @@ from unittest.mock import Mock
 
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
+from app.models.booking import Booking
+from app.models.enums import BookingStatus
 
 
 def get_valid_booking_payload() -> dict[str, str]:
     return {
         "name": "Danil",
-        "datetime": "2026-06-20T15:00:00Z",
+        "datetime": "2030-06-20T15:00:00Z",
         "service_type": "consultation",
     }
+
+
+def create_booking_via_api(
+    client: TestClient,
+    payload: dict[str, str] | None = None,
+) -> dict:
+    response = client.post(
+        "/bookings",
+        json=payload or get_valid_booking_payload(),
+    )
+
+    assert response.status_code == 201
+
+    return response.json()
 
 
 def test_create_booking_success(
@@ -124,4 +143,132 @@ def test_get_booking_by_id_not_found(
     assert response.status_code == 404
     assert response.json() == {"detail": "Booking not found."}
 
+    celery_delay_mock.assert_not_called()
+
+
+def test_list_bookings_success(
+    client: TestClient,
+    celery_delay_mock: Mock,
+) -> None:
+    first_booking = create_booking_via_api(client)
+    second_booking = create_booking_via_api(
+        client,
+        {
+            "name": "Alex",
+            "datetime": "2030-06-21T10:00:00Z",
+            "service_type": "diagnostics",
+        },
+    )
+
+    celery_delay_mock.reset_mock()
+
+    response = client.get("/bookings")
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert data["total"] == 2
+    assert data["limit"] == 10
+    assert data["offset"] == 0
+    assert len(data["items"]) == 2
+
+    returned_ids = {item["id"] for item in data["items"]}
+
+    assert returned_ids == {
+        first_booking["id"],
+        second_booking["id"],
+    }
+
+    celery_delay_mock.assert_not_called()
+
+
+def test_list_bookings_filters_by_status(
+    client: TestClient,
+    db_session: Session,
+    celery_delay_mock: Mock,
+) -> None:
+    pending_booking = create_booking_via_api(client)
+    confirmed_booking = create_booking_via_api(
+        client,
+        {
+            "name": "Alex",
+            "datetime": "2030-06-21T10:00:00Z",
+            "service_type": "diagnostics",
+        },
+    )
+
+    booking = db_session.scalar(
+        select(Booking).where(Booking.id == confirmed_booking["id"])
+    )
+    assert booking is not None
+
+    booking.status = BookingStatus.CONFIRMED.value
+    db_session.commit()
+
+    celery_delay_mock.reset_mock()
+
+    response = client.get("/bookings?status=confirmed")
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert data["total"] == 1
+    assert len(data["items"]) == 1
+    assert data["items"][0]["id"] == confirmed_booking["id"]
+    assert data["items"][0]["status"] == "confirmed"
+
+    returned_ids = {item["id"] for item in data["items"]}
+
+    assert pending_booking["id"] not in returned_ids
+
+    celery_delay_mock.assert_not_called()
+
+
+def test_list_bookings_supports_pagination(
+    client: TestClient,
+    celery_delay_mock: Mock,
+) -> None:
+    create_booking_via_api(
+        client,
+        {
+            "name": "First",
+            "datetime": "2030-06-20T10:00:00Z",
+            "service_type": "consultation",
+        },
+    )
+    second_booking = create_booking_via_api(
+        client,
+        {
+            "name": "Second",
+            "datetime": "2030-06-21T10:00:00Z",
+            "service_type": "consultation",
+        },
+    )
+    create_booking_via_api(
+        client,
+        {
+            "name": "Third",
+            "datetime": "2030-06-22T10:00:00Z",
+            "service_type": "consultation",
+        },
+    )
+
+    celery_delay_mock.reset_mock()
+
+    response = client.get("/bookings?limit=1&offset=1")
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert data["total"] == 3
+    assert data["limit"] == 1
+    assert data["offset"] == 1
+    assert len(data["items"]) == 1
+
+    returned_id = data["items"][0]["id"]
+
+    assert returned_id == second_booking["id"]
     celery_delay_mock.assert_not_called()
