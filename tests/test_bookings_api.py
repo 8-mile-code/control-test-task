@@ -272,3 +272,114 @@ def test_list_bookings_supports_pagination(
 
     assert returned_id == second_booking["id"]
     celery_delay_mock.assert_not_called()
+
+
+def test_cancel_pending_booking_success(
+    client: TestClient,
+    celery_delay_mock: Mock,
+) -> None:
+    booking = create_booking_via_api(client)
+
+    celery_delay_mock.reset_mock()
+
+    response = client.delete(f"/bookings/{booking['id']}")
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert data["id"] == booking["id"]
+    assert data["status"] == "cancelled"
+    assert data["name"] == booking["name"]
+    assert data["service_type"] == booking["service_type"]
+
+    celery_delay_mock.assert_not_called()
+
+
+def test_cancel_confirmed_booking_returns_409(
+    client: TestClient,
+    db_session: Session,
+    celery_delay_mock: Mock,
+) -> None:
+    booking = create_booking_via_api(client)
+
+    db_booking = db_session.scalar(
+        select(Booking).where(Booking.id == booking["id"])
+    )
+    assert db_booking is not None
+
+    db_booking.status = BookingStatus.CONFIRMED.value
+    db_session.commit()
+
+    celery_delay_mock.reset_mock()
+
+    response = client.delete(f"/bookings/{booking['id']}")
+
+    assert response.status_code == 409
+    assert response.json() == {
+        "detail": "Only pending bookings can be cancelled."
+    }
+
+    celery_delay_mock.assert_not_called()
+
+
+def test_cancel_failed_booking_returns_409(
+    client: TestClient,
+    db_session: Session,
+    celery_delay_mock: Mock,
+) -> None:
+    booking = create_booking_via_api(client)
+
+    db_booking = db_session.scalar(
+        select(Booking).where(Booking.id == booking["id"])
+    )
+    assert db_booking is not None
+
+    db_booking.status = BookingStatus.FAILED.value
+    db_session.commit()
+
+    celery_delay_mock.reset_mock()
+
+    response = client.delete(f"/bookings/{booking['id']}")
+
+    assert response.status_code == 409
+    assert response.json() == {
+        "detail": "Only pending bookings can be cancelled."
+    }
+
+    celery_delay_mock.assert_not_called()
+
+
+def test_cancel_missing_booking_returns_404(
+    client: TestClient,
+    celery_delay_mock: Mock,
+) -> None:
+    response = client.delete("/bookings/999")
+
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Booking not found."}
+
+    celery_delay_mock.assert_not_called()
+
+
+def test_cancel_already_cancelled_booking_returns_409(
+    client: TestClient,
+    celery_delay_mock: Mock,
+) -> None:
+    booking = create_booking_via_api(client)
+
+    first_response = client.delete(f"/bookings/{booking['id']}")
+
+    assert first_response.status_code == 200
+    assert first_response.json()["status"] == "cancelled"
+
+    celery_delay_mock.reset_mock()
+
+    second_response = client.delete(f"/bookings/{booking['id']}")
+
+    assert second_response.status_code == 409
+    assert second_response.json() == {
+        "detail": "Only pending bookings can be cancelled."
+    }
+
+    celery_delay_mock.assert_not_called()
