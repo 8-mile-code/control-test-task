@@ -191,15 +191,15 @@ make worker
 ## Команды
 
 ```bash
-make dev        # запустить API локально
-make worker     # запустить Celery worker локально
-make migrate    # применить миграции
-make lint       # проверить код Ruff
-make format     # отформатировать код
-make fix        # автоисправления Ruff и форматирование
-make test       # запустить тесты
-make docker-up  # запустить весь стек через Docker
-make docker-down # остановить Docker-стек
+make dev          # запустить API локально
+make worker       # запустить Celery worker локально
+make migrate      # применить миграции
+make lint         # проверить код Ruff
+make format       # отформатировать код
+make fix          # автоисправления Ruff и форматирование
+make test         # запустить тесты
+make docker-up    # запустить весь стек через Docker
+make docker-down  # остановить Docker-стек
 ```
 
 ## Тесты
