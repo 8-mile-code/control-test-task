@@ -80,7 +80,7 @@ curl -X POST http://127.0.0.1:8000/bookings \
   -H "Content-Type: application/json" \
   -d '{
     "name": "Danil",
-    "datetime": "2026-06-25T15:00:00Z",
+    "datetime": "2030-06-25T15:00:00Z",
     "service_type": "consultation"
   }'
 ```
@@ -133,6 +133,31 @@ make test       # запустить тесты
 make docker-up  # запустить весь стек через Docker
 make docker-down # остановить Docker-стек
 ```
+
+## Тесты
+
+Тесты запускаются из корня проекта:
+
+```bash
+make test
+```
+
+Или напрямую:
+
+```bash
+uv run pytest
+```
+
+Для тестов используется SQLite in-memory. FastAPI dependency для database
+session переопределяется, а отправка Celery-задачи мокается, поэтому для
+запуска тестов не требуются PostgreSQL, Redis, Celery worker или Docker.
+
+API-тесты покрывают:
+
+- создание и валидацию брони;
+- получение брони по id;
+- получение списка, фильтрацию и пагинацию;
+- отмену брони и запрещённые переходы статусов.
 
 ## Retry и backoff
 
